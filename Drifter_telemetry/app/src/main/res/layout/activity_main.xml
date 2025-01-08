@@ -1,0 +1,123 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <ImageView
+        android:id="@+id/carImageView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:src="@drawable/car" />
+
+    <com.example.drifter_telemetry.GForceView
+        android:id="@+id/gForceView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true"
+        android:translationY="100dp" />
+
+    <View
+        android:id="@+id/leftWheelLine"
+        android:layout_width="10dp"
+        android:layout_height="75dp"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="60dp"
+        android:layout_marginTop="100dp"
+        android:background="@android:color/black" />
+
+    <View
+        android:id="@+id/rightWheelLine"
+        android:layout_width="10dp"
+        android:layout_height="75dp"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="60dp"
+        android:layout_marginTop="100dp"
+        android:background="@android:color/black" />
+
+    <com.example.drifter_telemetry.RotationalRateGaugeView
+        android:id="@+id/rotationalRateGauge"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="200dp"
+        android:background="@android:color/transparent" />
+
+    <TextView
+        android:id="@+id/armedTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/rotationalRateGauge"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="-20dp"
+        android:text="Armed: "
+        android:textSize="16sp"
+        android:textColor="@android:color/black" />
+
+    <TextView
+        android:id="@+id/steeringModeTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/armedTextView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"
+        android:text="Steering Mode: "
+        android:textSize="16sp"
+        android:textColor="@android:color/black" />
+
+    <TextView
+        android:id="@+id/driveModeTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/steeringModeTextView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"
+        android:text="Drive Mode: "
+        android:textSize="16sp"
+        android:textColor="@android:color/black" />
+
+    <ProgressBar
+        android:id="@+id/motor1RpmBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="-10dp"
+        android:layout_marginTop="120dp"
+        android:max="10000"
+        android:rotation="270" />
+
+    <ProgressBar
+        android:id="@+id/motor2RpmBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="-10dp"
+        android:layout_marginTop="120dp"
+        android:max="10000"
+        android:rotation="270" />
+
+    <ProgressBar
+        android:id="@+id/motor3RpmBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="-10dp"
+        android:layout_marginTop="520dp"
+        android:max="10000"
+        android:rotation="270" />
+
+    <ProgressBar
+        android:id="@+id/motor4RpmBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="-10dp"
+        android:layout_marginTop="520dp"
+        android:max="10000"
+        android:rotation="270" />
+        
+</RelativeLayout>
