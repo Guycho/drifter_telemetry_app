@@ -43,6 +43,8 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.gson)
     testImplementation(libs.junit)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
     androidTestImplementation(libs.androidx.junit.v113)
     androidTestImplementation(libs.androidx.espresso.core.v340)
 

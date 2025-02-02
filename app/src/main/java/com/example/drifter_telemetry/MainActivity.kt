@@ -1,19 +1,34 @@
 package com.example.drifter_telemetry
 
+import android.Manifest
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothSocket
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import okhttp3.*
+import androidx.core.app.ActivityCompat
+import kotlinx.coroutines.*
 import org.json.JSONObject
 import java.io.IOException
+import java.io.InputStream
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
+    private val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
+    private var bluetoothSocket: BluetoothSocket? = null
+    private var inputStream: InputStream? = null
+    private val deviceAddress = "A0:DD:6C:03:9E:42" // Replace with your ESP32 Bluetooth MAC address
+    private val uuid: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB") // Standard SerialPortService ID
+
+    // Declare views
     private lateinit var gForceView: GForceView
     private lateinit var leftWheelLine: View
     private lateinit var rightWheelLine: View
@@ -25,14 +40,48 @@ class MainActivity : AppCompatActivity() {
     private lateinit var motor2RpmBar: ProgressBar
     private lateinit var motor3RpmBar: ProgressBar
     private lateinit var motor4RpmBar: ProgressBar
-    private val client = OkHttpClient()
-    private val handler = Handler(Looper.getMainLooper())
-    private val fetchInterval: Long = 100 // Fetch data every 100 milliseconds
 
+    private val REQUEST_ENABLE_BT = 1
+    private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val updateIntervalMs: Long = 100
+    private val buffer = StringBuilder()
+
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Request Bluetooth permissions
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED ||
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN),
+                REQUEST_ENABLE_BT
+            )
+        } else {
+            initializeBluetooth()
+        }
+
+        // Initialize views
+        initializeViews()
+
+        // Start fetching data
+        startFetchingData()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_ENABLE_BT) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                initializeBluetooth()
+            } else {
+                Log.e("MainActivity", "Bluetooth permissions denied")
+            }
+        }
+    }
+
+    private fun initializeViews() {
         gForceView = findViewById(R.id.gForceView)
         leftWheelLine = findViewById(R.id.leftWheelLine)
         rightWheelLine = findViewById(R.id.rightWheelLine)
@@ -44,86 +93,130 @@ class MainActivity : AppCompatActivity() {
         motor2RpmBar = findViewById(R.id.motor2RpmBar)
         motor3RpmBar = findViewById(R.id.motor3RpmBar)
         motor4RpmBar = findViewById(R.id.motor4RpmBar)
-
-        // Start fetching data continuously
-        startFetchingData()
     }
 
-    private fun startFetchingData() {
-        handler.post(fetchDataRunnable)
-    }
+    private fun initializeBluetooth() {
+        val pairedDevices: Set<BluetoothDevice>? = bluetoothAdapter?.bondedDevices
+        val device: BluetoothDevice? = pairedDevices?.find { it.address == deviceAddress }
 
-    private val fetchDataRunnable = object : Runnable {
-        override fun run() {
-            fetchJsonData()
-            handler.postDelayed(this, fetchInterval)
+        if (device == null) {
+            Log.e("MainActivity", "Device with address $deviceAddress is not paired")
+            return
+        }
+
+        Log.d("MainActivity", "Attempting to connect to device: $deviceAddress")
+        try {
+            bluetoothSocket = device.createRfcommSocketToServiceRecord(uuid)
+            bluetoothAdapter?.cancelDiscovery()
+            bluetoothSocket?.connect()
+            inputStream = bluetoothSocket?.inputStream
+            Log.d("MainActivity", "Bluetooth connected")
+        } catch (e: IOException) {
+            Log.e("MainActivity", "Failed to connect Bluetooth: ${e.message}")
+            try {
+                bluetoothSocket?.close()
+            } catch (closeException: IOException) {
+                closeException.printStackTrace()
+            }
         }
     }
 
-    private fun fetchJsonData() {
-        val url = "http://192.168.4.1/data" // Replace with your ESP32 IP address
-        Log.d("MainActivity", "Fetching data from $url")
-        val request = Request.Builder().url(url).build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                e.printStackTrace()
-                Log.e("MainActivity", "Failed to fetch data: ${e.message}")
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                if (response.isSuccessful) {
-                    val jsonData = response.body?.string()
-                    Log.d("MainActivity", "Fetched data: $jsonData")
-                    runOnUiThread {
-                        updateUI(jsonData)
+    private fun startFetchingData() {
+        ioScope.launch {
+            try {
+                while (isActive) {
+                    inputStream?.let {
+                        val buffer = ByteArray(1024)
+                        val bytesRead = it.read(buffer)
+                        if (bytesRead > 0) {
+                            val jsonData = String(buffer, 0, bytesRead)
+                            processReceivedData(jsonData)
+                        }
+                    } ?: run {
+                        Log.e("MainActivity", "InputStream is not initialized")
+                        delay(1000) // Wait for a second before retrying
                     }
-                } else {
-                    Log.e("MainActivity", "Failed to fetch data: ${response.message}")
                 }
+            } catch (e: IOException) {
+                Log.e("MainActivity", "Error reading Bluetooth data: ${e.message}")
             }
-        })
+        }
     }
 
-    private fun updateUI(jsonData: String?) {
-        if (jsonData == null) return
+    private fun processReceivedData(data: String) {
+        buffer.append(data)
+
+        var startIndex = 0
+        var endIndex: Int
+
+        while (true) {
+            endIndex = buffer.indexOf("\n", startIndex)
+            if (endIndex == -1) break
+
+            val jsonObject = buffer.substring(startIndex, endIndex).trim()
+            if (jsonObject.isNotEmpty()) {
+                try {
+                    val json = JSONObject(jsonObject)
+                    ioScope.launch {
+                        delay(updateIntervalMs)
+                        withContext(Dispatchers.Main) {
+                            updateUI(json)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Failed to parse JSON data: ${e.message}")
+                }
+            }
+            startIndex = endIndex + 1
+        }
+
+        // Remove processed data from buffer
+        buffer.delete(0, startIndex)
+    }
+
+    private fun updateUI(jsonObject: JSONObject) {
+        if (jsonObject == null) return
 
         try {
-            val jsonObject = JSONObject(jsonData)
-
             val gForceX = jsonObject.getDouble("g_force_x").toFloat()
             val gForceY = jsonObject.getDouble("g_force_y").toFloat()
-            val leftSteeringAngle = jsonObject.getDouble("left_steering").toFloat()
-            val rightSteeringAngle = jsonObject.getDouble("right_steering").toFloat()
+            val steeringArray = jsonObject.getJSONArray("steering_values")
+            val leftSteeringAngle = steeringArray.getDouble(0).toFloat()
+            val rightSteeringAngle = steeringArray.getDouble(1).toFloat()
             val rotationalRate = jsonObject.getDouble("rotational_rate").toFloat()
             val armed = jsonObject.getString("arm_enabled")
             val steeringMode = jsonObject.getString("steering_mode")
             val driveMode = jsonObject.getString("drive_mode")
-            val motor1Rpm = jsonObject.getInt("motor1_rpm")
-            val motor2Rpm = jsonObject.getInt("motor2_rpm")
-            val motor3Rpm = jsonObject.getInt("motor3_rpm")
-            val motor4Rpm = jsonObject.getInt("motor4_rpm")
-
+            val motorRpmArray = jsonObject.getJSONArray("motor_rpm")
+            val motor1Rpm = motorRpmArray.getInt(0)
+            val motor2Rpm = motorRpmArray.getInt(1)
+            val motor3Rpm = motorRpmArray.getInt(2)
+            val motor4Rpm = motorRpmArray.getInt(3)
+    
             gForceView.updateGForce(gForceX, gForceY)
             leftWheelLine.rotation = leftSteeringAngle
             rightWheelLine.rotation = rightSteeringAngle
             rotationalRateGauge.updateRotationalRate(rotationalRate)
-            armedTextView.text = "$armed"
-            steeringModeTextView.text = "$steeringMode"
-            driveModeTextView.text = "$driveMode"
+            armedTextView.text = armed
+            steeringModeTextView.text = steeringMode
+            driveModeTextView.text = driveMode
             motor1RpmBar.progress = motor1Rpm
             motor2RpmBar.progress = motor2Rpm
             motor3RpmBar.progress = motor3Rpm
             motor4RpmBar.progress = motor4Rpm
+
         } catch (e: Exception) {
-            e.printStackTrace()
-            Log.e("MainActivity", "Failed to parse JSON data: ${e.message}")
+            Log.e("MainActivity", "Error updating UI: ${e.message}")
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // Stop fetching data when the activity is destroyed
-        handler.removeCallbacks(fetchDataRunnable)
+        ioScope.cancel() // Cancel all coroutines
+        try {
+            bluetoothSocket?.close()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
     }
 }
