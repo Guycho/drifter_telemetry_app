@@ -77,6 +77,28 @@
         android:textSize="16sp"
         android:textColor="@android:color/black" />
 
+    <TextView
+        android:id="@+id/batteryStatusTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/driveModeTextView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="-250dp"
+        android:text="Battery Status"
+        android:textSize="16sp"
+        android:textColor="@android:color/black" />
+
+    <TextView
+        android:id="@+id/batteryVoltageTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/batteryStatusTextView"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"
+        android:text="0.0V"
+        android:textSize="16sp"
+        android:textColor="@android:color/black" />
+
     <ProgressBar
         android:id="@+id/motor1RpmBar"
         style="?android:attr/progressBarStyleHorizontal"
@@ -120,5 +142,5 @@
         android:layout_marginTop="520dp"
         android:max="7500"
         android:rotation="270" />
-        
+
 </RelativeLayout>

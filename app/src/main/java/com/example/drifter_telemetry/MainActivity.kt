@@ -40,6 +40,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var motor2RpmBar: ProgressBar
     private lateinit var motor3RpmBar: ProgressBar
     private lateinit var motor4RpmBar: ProgressBar
+    private lateinit var batteryStatusTextView: TextView
+    private lateinit var batteryVoltageTextView: TextView
 
     private val REQUEST_ENABLE_BT = 1
     private val ioScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -93,6 +95,8 @@ class MainActivity : AppCompatActivity() {
         motor2RpmBar = findViewById(R.id.motor2RpmBar)
         motor3RpmBar = findViewById(R.id.motor3RpmBar)
         motor4RpmBar = findViewById(R.id.motor4RpmBar)
+        batteryStatusTextView = findViewById(R.id.batteryStatusTextView)
+        batteryVoltageTextView = findViewById(R.id.batteryVoltageTextView)
     }
 
     private fun initializeBluetooth() {
@@ -192,7 +196,9 @@ class MainActivity : AppCompatActivity() {
             val motor2Rpm = motorRpmArray.getInt(1)
             val motor3Rpm = motorRpmArray.getInt(2)
             val motor4Rpm = motorRpmArray.getInt(3)
-    
+            val batteryStatus = jsonObject.getString("battery_status")
+            val batteryVoltage = jsonObject.getDouble("battery_voltage").toFloat()
+
             gForceView.updateGForce(gForceX, gForceY)
             leftWheelLine.rotation = leftSteeringAngle
             rightWheelLine.rotation = rightSteeringAngle
@@ -204,6 +210,8 @@ class MainActivity : AppCompatActivity() {
             motor2RpmBar.progress = motor2Rpm
             motor3RpmBar.progress = motor3Rpm
             motor4RpmBar.progress = motor4Rpm
+            batteryStatusTextView.text = batteryStatus
+            batteryVoltageTextView.text = "%.2fV".format(batteryVoltage)
 
         } catch (e: Exception) {
             Log.e("MainActivity", "Error updating UI: ${e.message}")
