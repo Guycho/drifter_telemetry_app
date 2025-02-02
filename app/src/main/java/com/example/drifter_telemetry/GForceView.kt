@@ -19,6 +19,9 @@ class GForceView @JvmOverloads constructor(
     var gForceX: Float = 0f
     var gForceY: Float = 0f
 
+    var minGForce: Float = -10f // Define minimum G-force value
+    var maxGForce: Float = 10f  // Define maximum G-force value
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val centerX = width / 2f
@@ -36,17 +39,16 @@ class GForceView @JvmOverloads constructor(
     }
 
     fun updateGForce(gForceX: Float, gForceY: Float) {
-        this.gForceX = gForceY
-        this.gForceY = gForceX
+        this.gForceX = constrain(gForceX, minGForce, maxGForce)
+        this.gForceY = constrain(gForceY, minGForce, maxGForce)
         invalidate()
     }
 
-    private fun constraint(value: Float, min: Float, max: Float): Float {
+    private fun constrain(value: Float, min: Float, max: Float): Float {
         return when {
             value < min -> min
             value > max -> max
             else -> value
         }
     }
-
 }

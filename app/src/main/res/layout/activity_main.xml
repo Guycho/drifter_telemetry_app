@@ -85,7 +85,7 @@
         android:layout_alignParentStart="true"
         android:layout_marginStart="-10dp"
         android:layout_marginTop="120dp"
-        android:max="10000"
+        android:max="7500"
         android:rotation="270" />
 
     <ProgressBar
@@ -96,7 +96,7 @@
         android:layout_alignParentEnd="true"
         android:layout_marginEnd="-10dp"
         android:layout_marginTop="120dp"
-        android:max="10000"
+        android:max="7500"
         android:rotation="270" />
 
     <ProgressBar
@@ -107,7 +107,7 @@
         android:layout_alignParentStart="true"
         android:layout_marginStart="-10dp"
         android:layout_marginTop="520dp"
-        android:max="10000"
+        android:max="7500"
         android:rotation="270" />
 
     <ProgressBar
@@ -118,7 +118,7 @@
         android:layout_alignParentEnd="true"
         android:layout_marginEnd="-10dp"
         android:layout_marginTop="520dp"
-        android:max="10000"
+        android:max="7500"
         android:rotation="270" />
         
 </RelativeLayout>
